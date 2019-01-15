@@ -1,0 +1,18 @@
+{
+  "name": "react-native-animated-view",
+  "version": "1.0.0",
+  "description": "你可以像jQuery那样只给结果样式就能操作各种动画,你可以控制每一个样式的动画时间、动画函数甚至每一帧等。总之,你可以随意搭配轻松如意地操纵react-native动画。",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:thisXY/react-native-animated-view.git"
+  },
+  "homepage": "https://github.com/thisXY/react-native-animated-view#readme",
+  "keywords": [
+    "react native animated view",
+    "react native动画"
+  ],
+  "main": "src/index.js",
+  "author": "XY",
+  "email": "543230241@qq.com"
+}
