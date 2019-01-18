@@ -14,10 +14,11 @@ npm install react-native-animated-view --save
 ### 属性
 
 | parameter              | type                                          | required | default                  | description                                                                                                                                                                                                                        
-| :--------------------- | :-------------------------------------------- | :------- | :------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| :--------------------- | :-------------------------------------------- | :------- | :------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 | children               | oneOfType([element, array(arrayOf(element))]) | no       | null                     | 子组件                                                                                                                                                                                                                     
 | animationElement       | func                                          | no       | Animated.View            | 动画元素
 | style                  | oneOfType([number, object, array])            | no       |                          | 样式    
+| isUseNativeDriver      | bool                                          | no       | false                    | 是否启用原生动画驱动 (启用原生动画驱动几乎不会有UI卡顿);<br>目前RN仅支持其中样式['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius'];<br>若尝试启动非支持样式的原生动画驱动, start()将返回false示意无法启动;<br>由于RN机制该设置一旦设定将不可切换 (你可以创建一个新的AnimatedView切换该设置)
 | defaultAnimationType   | oneOf(['sequence', 'parallel'])               | no       | parallel                 | 动画类型 <br><br>sequence: 顺序执行<br><br>parallel: 同时执行
 | defaultEasing          | func                                          | no       | Easing.inOut(Easing.ease)| 默认动画函数
 | defaultDuration        | number                                        | no       | 500                      | 默认动画时间 (ms)

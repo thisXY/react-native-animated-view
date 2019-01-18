@@ -13,6 +13,13 @@ class AnimatedView extends Component {
     animationElement: PropTypes.func,
     // 样式
     style: PropTypes.oneOfType([PropTypes.number, PropTypes.object, PropTypes.array]),
+    /**
+     * 是否启用原生动画驱动 (启用原生动画驱动几乎不会有UI卡顿)
+     * 目前RN仅支持其中样式['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius']
+     * 若尝试启动非支持样式的原生动画驱动, start()将返回false示意无法启动
+     * 由于RN机制该设置一旦设定将不可切换 (你可以创建一个新的AnimatedView切换该设置)
+     */
+    isUseNativeDriver: PropTypes.bool,
     // 默认动画类型 (sequence: 顺序执行, parallel: 同时执行)
     defaultAnimationType: PropTypes.oneOf(['sequence', 'parallel']),
     // 默认动画函数
@@ -35,6 +42,7 @@ class AnimatedView extends Component {
     children: null,
     animationElement: Animated.View,
     style: null,
+    isUseNativeDriver: false,
     defaultAnimationType: 'parallel',
     defaultEasing: Easing.inOut(Easing.ease),
     defaultDuration: 500,
@@ -55,7 +63,7 @@ class AnimatedView extends Component {
     // 历史动画
     this.animations = {};
     // 是否启用原生动画驱动
-    this.isUseNativeDriver = true;
+    this.isUseNativeDriver = props.isUseNativeDriver;
   }
 
   componentWillUnmount() {
@@ -101,18 +109,56 @@ class AnimatedView extends Component {
       callback = this.props.defaultCallback,
       animationType = this.props.defaultAnimationType,
     } = {}) => {
+    const animations = [];
+    const animationStyles = { ...this.state.animationStyles };
+    const configList = [];
+
+    // 初始化动画设置
+    if (Array.isArray(configs)) {
+      for (const config of configs) {
+        configList.push({ duration, easing, frameCallback, configName: config.name, ...config });
+      }
+    }
+    else if (typeof configs === 'object') {
+      for (const name of Object.keys(configs)) {
+        const config = {
+          name,
+          configName: name,
+          duration,
+          easing,
+          frameCallback,
+        };
+        if (Array.isArray(configs[name]) && Object.prototype.toString.call(configs[name][0]) !== '[object Object]') {
+          if (configs[name].length === 2) {
+            config.initValue = configs[name][0];
+            config.value = configs[name][1];
+          }
+          else {
+            config.value = configs[name][0];
+          }
+        }
+        else {
+          config.value = configs[name];
+        }
+        configList.push(config);
+      }
+    }
+
+    // 原生动画驱动
+    if (this.isUseNativeDriver && configList.filter(config => ['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius'].includes(config.name)).length !== configList.length) {
+      // 无法启动
+      return false;
+    }
+
     // 停止动画
     this.stop();
 
-    this.animationConfigs = [];
-    const animations = [];
-    const animationStyles = { ...this.state.animationStyles };
     // 设置动画
-    const setAnimations = async config => {
-      this.isUseNativeDriver = this.isUseNativeDriver &&
-        ['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius'].includes(config.name);
+    this.animationConfigs = [];
+    for (const config of configList) {
       if (Array.isArray(config.value)) {
         animationStyles[config.name] = animationStyles[config.name] ? [...animationStyles[config.name]] : [];
+        let key = 0;
         for (const value of config.value) {
           const valueKeys = Object.keys(value);
           const valueConfig = {
@@ -120,7 +166,7 @@ class AnimatedView extends Component {
             name: valueKeys[0],
             configName: `${config.name}_${valueKeys[0]}`,
             value: value[valueKeys[0]],
-            initValue: config.initValue && config.initValue[valueKeys[0]],
+            initValue: config.initValue && config.initValue[key][valueKeys[0]],
           };
           const animation = await this._getAnimation(valueConfig);
           this.animationConfigs.push(valueConfig);
@@ -137,6 +183,7 @@ class AnimatedView extends Component {
             easing: valueConfig.easing,
             useNativeDriver: this.isUseNativeDriver,
           }));
+          key++;
         }
       }
       else if (Object.prototype.toString.call(config.value) === '[object Object]') {
@@ -176,37 +223,6 @@ class AnimatedView extends Component {
           easing: config.easing,
           useNativeDriver: this.isUseNativeDriver,
         }));
-      }
-    };
-
-    if (Array.isArray(configs)) {
-      for (let config of configs) {
-        config = { duration, easing, frameCallback, configName: config.name, ...config };
-        await setAnimations(config);
-      }
-    }
-    else if (typeof configs === 'object') {
-      for (const name of Object.keys(configs)) {
-        const config = {
-          name,
-          configName: name,
-          duration,
-          easing,
-          frameCallback,
-        };
-        if (Array.isArray(configs[name]) && Object.prototype.toString.call(configs[name][0]) !== '[object Object]') {
-          if (configs[name].length === 2) {
-            config.initValue = configs[name][0];
-            config.value = configs[name][1];
-          }
-          else {
-            config.value = configs[name][0];
-          }
-        }
-        else {
-          config.value = configs[name];
-        }
-        await setAnimations(config);
       }
     }
 
@@ -283,10 +299,10 @@ class AnimatedView extends Component {
     }
     // 动画帧监听
     animation.animation.removeAllListeners();
-    // 无回调时不监听
-    if (config.frameCallback) {
+    // 有帧回调 || 启动原生动画驱动
+    if (config.frameCallback || this.isUseNativeDriver) {
       animation.animation.addListener(num => {
-        config.frameCallback({
+        config.frameCallback && config.frameCallback({
           name: config.configName,
           value: this._getValue(animation.outputRange[0], animation.outputRange[1], num.value),
           num: num.value,
