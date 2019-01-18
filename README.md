@@ -1,6 +1,6 @@
 # react-native-animated-view
 [![Platform](https://img.shields.io/badge/platform-react--native-lightgrey.svg)](http://facebook.github.io/react-native/)
-[![npm version](http://img.shields.io/npm/v/react-native-dropdownalert.svg)](https://www.npmjs.com/package/react-native-animated-view)
+[![npm version](http://img.shields.io/npm/v/react-native-animated-view.svg)](https://www.npmjs.com/package/react-native-animated-view)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/thisXY/react-native-animated-view/master/LICENSE)
 
 你可以像jQuery那样只给结果样式就能操作各种动画,你可以控制每一个样式的动画时间、动画函数甚至每一帧等。总之,你可以随意搭配轻松如意地操纵react-native动画。
