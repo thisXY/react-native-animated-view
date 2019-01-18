@@ -214,4 +214,4 @@ export default Example;
 ```
 ### 源码
 
-https://github.com/thisXY/react-native-animated-view
+> https://github.com/thisXY/react-native-animated-view
