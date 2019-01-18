@@ -1,4 +1,8 @@
 # react-native-animated-view
+[![Platform](https://img.shields.io/badge/platform-react--native-lightgrey.svg)](http://facebook.github.io/react-native/)
+[![npm version](http://img.shields.io/npm/v/react-native-dropdownalert.svg)](https://www.npmjs.com/package/react-native-animated-view)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/thisXY/react-native-animated-view/master/LICENSE)
+
 你可以像jQuery那样只给结果样式就能操作各种动画,你可以控制每一个样式的动画时间、动画函数甚至每一帧等。总之,你可以随意搭配轻松如意地操纵react-native动画。
 
 ### 安装
@@ -9,16 +13,16 @@ npm install react-native-animated-view --save
 
 ### 属性
 
-| parameter              | type                                               | required | default                      | description                                                                                                                                                                                                                        
-| :--------------------- | :------------------------------------------------- | :------- | :----------------------------| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-| children               | oneOfType([element, array(arrayOf(element))])      | no       | null                         | 子组件                                                                                                                                                                                                                     
-| animationElement       | func                                               | no       | Animated.View                | 动画元素
-| style                  | oneOfType([number, object, array])                 | no       |                              | 样式    
-| defaultAnimationType   | oneOf(['sequence', 'parallel'])                    | no       | parallel                     | 动画类型 <br><br>sequence: 顺序执行<br><br>parallel: 同时执行
-| defaultEasing          | func                                               | no       | Easing.inOut(Easing.ease)    | 默认动画函数
-| defaultDuration        | number                                             | no       | 500                          | 默认动画时间 (ms)
-| defaultCallback        | func                                               | no       |                              | 默认结束回调 (<br><br>isFinish: 动画是否完成<br><br>)
-| defaultFrameCallback   | func                                               | no       |                              | 默认动画帧回调 (<br><br>info: 当前帧信息{<br><br>name: 样式名, <br><br>value: 当前样式值, <br><br>num: 当前动画值, <br><br>inputRange: 动画值区间, <br><br>outputRange: 样式值区间, <br><br>isFinish: 是否结束<br><br>})
+| parameter              | type                                          | required | default                  | description                                                                                                                                                                                                                        
+| :--------------------- | :-------------------------------------------- | :------- | :------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| children               | oneOfType([element, array(arrayOf(element))]) | no       | null                     | 子组件                                                                                                                                                                                                                     
+| animationElement       | func                                          | no       | Animated.View            | 动画元素
+| style                  | oneOfType([number, object, array])            | no       |                          | 样式    
+| defaultAnimationType   | oneOf(['sequence', 'parallel'])               | no       | parallel                 | 动画类型 <br><br>sequence: 顺序执行<br><br>parallel: 同时执行
+| defaultEasing          | func                                          | no       | Easing.inOut(Easing.ease)| 默认动画函数
+| defaultDuration        | number                                        | no       | 500                      | 默认动画时间 (ms)
+| defaultCallback        | func                                          | no       |                          | 默认结束回调 (<br><br>isFinish: 动画是否完成<br><br>)
+| defaultFrameCallback   | func                                          | no       |                          | 默认动画帧回调 (<br><br>info: 当前帧信息{<br><br>name: 样式名, <br><br>value: 当前样式值, <br><br>num: 当前动画值, <br><br>inputRange: 动画值区间, <br><br>outputRange: 样式值区间, <br><br>isFinish: 是否结束<br><br>})
 
 ### 方法
 启动动画:
