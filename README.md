@@ -64,12 +64,13 @@ npm install react-native-animated-view --save
   stop = () => {}
 ```
 ### 示例
+![screenshot](https://raw.github.com/thisXY/react-native-animated-view/master/demo/demo.gif)
 ```js
 import React, { Component } from 'react';
 import { View, Text, TouchableOpacity, Easing, StyleSheet } from 'react-native';
 import AnimatedView from 'react-native-animated-view';
 
-class Example extends Component {
+class Demo extends Component {
   constructor(props) {
     super(props);
     this.state = {};
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Example;
+export default Demo;
 
 ```
 ### 源码

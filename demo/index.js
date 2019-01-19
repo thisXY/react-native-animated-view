@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { View, Text, TouchableOpacity, Easing, StyleSheet } from 'react-native';
 import AnimatedView from '../src';
 
-class Example extends Component {
+class Demo extends Component {
   constructor(props) {
     super(props);
     this.state = {};
@@ -143,4 +143,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Example;
+export default Demo;
