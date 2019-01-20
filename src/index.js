@@ -8,7 +8,7 @@ import { gradualChange } from './utils';
  */
 class AnimatedView extends Component {
   static propTypes = {
-    children: PropTypes.oneOfType([PropTypes.element, PropTypes.arrayOf(PropTypes.element)]),
+    children: PropTypes.node,
     // 动画元素
     animationElement: PropTypes.func,
     // 样式
@@ -55,7 +55,7 @@ class AnimatedView extends Component {
 
     this.state = {
       // 动画样式
-      animationStyles: {},
+      animationStyle: {},
     };
     this.animationRef = null;
     // 当前动画配置
@@ -110,7 +110,7 @@ class AnimatedView extends Component {
       animationType = this.props.defaultAnimationType,
     } = {}) => {
     const animations = [];
-    const animationStyles = { ...this.state.animationStyles };
+    const animationStyle = { ...this.state.animationStyle };
     const configList = [];
 
     // 初始化动画设置
@@ -128,7 +128,7 @@ class AnimatedView extends Component {
           easing,
           frameCallback,
         };
-        if (Array.isArray(configs[name]) && Object.prototype.toString.call(configs[name][0]) !== '[object Object]') {
+        if (Array.isArray(configs[name]) && (Object.prototype.toString.call(configs[name][0]) !== '[object Object]' || name !== 'transform')) {
           if (configs[name].length === 2) {
             config.initValue = configs[name][0];
             config.value = configs[name][1];
@@ -157,8 +157,7 @@ class AnimatedView extends Component {
     this.animationConfigs = [];
     for (const config of configList) {
       if (Array.isArray(config.value)) {
-        animationStyles[config.name] = animationStyles[config.name] ? [...animationStyles[config.name]] : [];
-        let key = 0;
+        animationStyle[config.name] = animationStyle[config.name] ? [...animationStyle[config.name]] : [];
         for (const value of config.value) {
           const valueKeys = Object.keys(value);
           const valueConfig = {
@@ -166,12 +165,12 @@ class AnimatedView extends Component {
             name: valueKeys[0],
             configName: `${config.name}_${valueKeys[0]}`,
             value: value[valueKeys[0]],
-            initValue: config.initValue && config.initValue[key][valueKeys[0]],
+            initValue: Array.isArray(config.initValue) && (config.initValue.find(initValue => Object.keys(initValue)[0] === valueKeys[0]) || {})[valueKeys[0]],
           };
           const animation = await this._getAnimation(valueConfig);
           this.animationConfigs.push(valueConfig);
-          animationStyles[config.name] = animationStyles[config.name].filter(animationStyle => Object.keys(animationStyle)[0] !== valueKeys[0]);
-          animationStyles[config.name].push({
+          animationStyle[config.name] = animationStyle[config.name].filter(style => Object.keys(style)[0] !== valueKeys[0]);
+          animationStyle[config.name].push({
             [valueKeys[0]]: animation.animation.interpolate({
               inputRange: animation.inputRange,
               outputRange: animation.outputRange,
@@ -183,11 +182,10 @@ class AnimatedView extends Component {
             easing: valueConfig.easing,
             useNativeDriver: this.isUseNativeDriver,
           }));
-          key++;
         }
       }
       else if (Object.prototype.toString.call(config.value) === '[object Object]') {
-        animationStyles[config.name] = animationStyles[config.name] ? { ...animationStyles[config.name] } : {};
+        animationStyle[config.name] = animationStyle[config.name] ? { ...animationStyle[config.name] } : {};
         for (const valueKey of Object.keys(config.value)) {
           const valueConfig = {
             ...config,
@@ -198,7 +196,7 @@ class AnimatedView extends Component {
           };
           const animation = await this._getAnimation(valueConfig);
           this.animationConfigs.push(valueConfig);
-          animationStyles[config.name][valueKey] = animation.animation.interpolate({
+          animationStyle[config.name][valueKey] = animation.animation.interpolate({
             inputRange: animation.inputRange,
             outputRange: animation.outputRange,
           });
@@ -213,7 +211,7 @@ class AnimatedView extends Component {
       else {
         const animation = await this._getAnimation(config);
         this.animationConfigs.push(config);
-        animationStyles[config.name] = animation.animation.interpolate({
+        animationStyle[config.name] = animation.animation.interpolate({
           inputRange: animation.inputRange,
           outputRange: animation.outputRange,
         });
@@ -228,7 +226,7 @@ class AnimatedView extends Component {
 
     return new Promise(resolve => {
       // 更新动画样式
-      this.setState({ animationStyles }, () => {
+      this.setState({ animationStyle }, () => {
         // 启动动画
         switch (animationType) {
           // 顺序执行
@@ -263,7 +261,7 @@ class AnimatedView extends Component {
           const outputRange = [...this.animations[animationConfig.configName].outputRange];
           const value = this._getValue(outputRange[0], outputRange[1], num);
           // 更新历史动画
-          this._updateAnimation(animationConfig.configName, value);
+          this._updateAnimation(animationConfig.configName, this.animations[animationConfig.configName].style, value);
 
           result.push({
             name: animationConfig.configName,
@@ -295,7 +293,7 @@ class AnimatedView extends Component {
     // 历史动画
     else {
       // 更新历史动画
-      animation = this._updateAnimation(config.configName, config.initValue || animation.outputRange[1], config.value);
+      animation = this._updateAnimation(config.configName, animation.style, config.initValue || animation.outputRange[1], config.value);
     }
     // 动画帧监听
     animation.animation.removeAllListeners();
@@ -326,18 +324,25 @@ class AnimatedView extends Component {
       animation: new Animated.Value(0),
       inputRange: [0, 1],
     };
-    // 初始值
-    let initValue = config.initValue || style[config.configName];
-    if (initValue === undefined) {
-      const configNames = config.configName.split('_');
-      if (configNames.length > 1) {
-        if (configNames[0] === 'transform') {
-          initValue = style.transform && (style.transform.find(item => Object.keys(item)[0] === configNames[1]) || {})[configNames[1]];
-        }
-        else {
-          initValue = style[configNames[0]] && style[configNames[0]][configNames[1]];
-        }
+
+    // 属性样式值
+    const configNames = config.configName.split('_');
+    if (configNames.length > 1 && style[configNames[0]]) {
+      if (Array.isArray(style[configNames[0]])) {
+        animation.style = (style[configNames[0]].find(item => Object.keys(item)[0] === configNames[1]) || {})[configNames[1]];
       }
+      else {
+        animation.style = style[configNames[0]][configNames[1]];
+      }
+    }
+    else {
+      animation.style = style[config.configName];
+    }
+
+    // 初始值
+    let initValue = config.initValue || animation.style;
+    if (initValue === undefined && animation.style !== undefined) {
+      initValue = animation.style;
     }
 
     if (initValue === undefined) {
@@ -349,7 +354,7 @@ class AnimatedView extends Component {
       else if (['rotate', 'rotateX', 'rotateY', 'rotateZ', 'skewX', 'skewY'].includes(config.name)) {
         initValue = '0deg';
       }
-      else if (['scale', 'scaleX', 'scaleY', 'shadowOpacity', 'opacity'].includes(config.name)) {
+      else if (['scale', 'scaleX', 'scaleY', 'opacity'].includes(config.name)) {
         initValue = 1;
       }
       else {
@@ -412,13 +417,15 @@ class AnimatedView extends Component {
   /**
    * 更新动画
    * @param configName 配置样式名
+   * @param style 属性样式值
    * @param initValue 初始样式值
    * @param value 结果样式值
    * @private
    */
-  _updateAnimation = (configName, initValue, value = initValue) => {
+  _updateAnimation = (configName, style, initValue, value = initValue) => {
     const animation = {
       animation: new Animated.Value(0),
+      style,
       inputRange: [0, 1],
       outputRange: [initValue, value],
     };
@@ -428,6 +435,16 @@ class AnimatedView extends Component {
     // 更新历史动画
     this.animations[configName] = animation;
     return animation;
+  }
+
+  /**
+   * 删除动画
+   * @param configName 配置样式名
+   * @private
+   */
+  _deleteAnimation = configName => {
+    this.animationConfigs = this.animationConfigs.filter(animationConfig => animationConfig.configName !== configName);
+    delete this.animations[configName];
   }
 
   /**
@@ -456,12 +473,88 @@ class AnimatedView extends Component {
 
   render() {
     const AnimationElement = this.props.animationElement;
+    const style = StyleSheet.flatten(this.props.style) || {};
+    const animationStyle = {};
+    Object.keys(this.state.animationStyle).forEach(key1 => {
+      switch (Object.prototype.toString.call(this.state.animationStyle[key1])) {
+        case '[object Object]':
+          if (this.state.animationStyle[key1]._interpolation) {
+            let isSetStyle = true;
+            if (this.animations[key1]) {
+              const newStyle = style[key1];
+              const oldStyle = this.animations[key1].style;
+              if (oldStyle !== newStyle) {
+                isSetStyle = false;
+              }
+            }
+            else {
+              isSetStyle = false;
+            }
+
+            if (isSetStyle) {
+              animationStyle[key1] = this.state.animationStyle[key1];
+            }
+            else {
+              this._deleteAnimation(key1);
+            }
+          }
+          else {
+            Object.keys(this.state.animationStyle[key1]).forEach(key2 => {
+              let isSetStyle = true;
+              if (this.animations[`${key1}_${key2}`]) {
+                const newStyle = style[key1] && style[key1][key2];
+                const oldStyle = this.animations[`${key1}_${key2}`].style;
+                if (oldStyle !== newStyle) {
+                  isSetStyle = false;
+                }
+              }
+              else {
+                isSetStyle = false;
+              }
+
+              if (isSetStyle) {
+                if (!animationStyle[key1]) animationStyle[key1] = {};
+                animationStyle[key1][key2] = this.state.animationStyle[key1][key2];
+              }
+              else {
+                this._deleteAnimation(`${key1}_${key2}`);
+              }
+            });
+          }
+          break;
+        case '[object Array]':
+          this.state.animationStyle[key1].forEach((val, key) => {
+            const key2 = Object.keys(val)[0];
+            let isSetStyle = true;
+
+            if (this.animations[`${key1}_${key2}`]) {
+              const newStyle = style[key1] && (style[key1].find(value => Object.keys(value)[0] === key2) || {})[key2];
+              const oldStyle = this.animations[`${key1}_${key2}`].style;
+              if (oldStyle !== newStyle) {
+                isSetStyle = false;
+              }
+            }
+            else {
+              isSetStyle = false;
+            }
+
+            if (isSetStyle) {
+              if (!animationStyle[key1]) animationStyle[key1] = [];
+              animationStyle[key1].push({ [key2]: this.state.animationStyle[key1][key][key2] });
+            }
+            else {
+              this._deleteAnimation(`${key1}_${key2}`);
+            }
+          });
+          break;
+      }
+    });
 
     return (
       <AnimationElement
         style={[
           this.props.style,
-          this.state.animationStyles,
+          animationStyle,
         ]}
         ref={ref => this.animationRef = ref}
       >
