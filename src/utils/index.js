@@ -29,6 +29,20 @@ const gradualChange = (color1, color2, scale = 1) => {
   return newColor;
 };
 
+/**
+ * 弧度rad -> 角度deg
+ * @param rad 弧度rad
+ * @return 角度deg
+ */
+const radToDeg = rad => {
+  const num = typeof rad === 'string' && rad.split('rad');
+  if (num && num.length === 2 && num[1] === '') {
+    return `${parseFloat(num[0]) * (180 / Math.PI)}deg`;
+  }
+  return rad;
+};
+
 export {
   gradualChange,
+  radToDeg,
 };

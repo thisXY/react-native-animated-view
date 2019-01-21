@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Animated, Easing, StyleSheet, UIManager, findNodeHandle } from 'react-native';
-import { gradualChange } from './utils';
+import { gradualChange, radToDeg } from './utils';
 
 /**
  * 动画View
@@ -165,8 +165,10 @@ class AnimatedView extends Component {
             name: valueKeys[0],
             configName: `${config.name}_${valueKeys[0]}`,
             value: value[valueKeys[0]],
-            initValue: Array.isArray(config.initValue) && (config.initValue.find(initValue => Object.keys(initValue)[0] === valueKeys[0]) || {})[valueKeys[0]],
+            initValue: Array.isArray(config.initValue) && (config.initValue.find(initValue => Object.keys(initValue)[0] === valueKeys[0]) || {})[valueKeys[0]] || undefined,
           };
+          valueConfig.value = radToDeg(valueConfig.value);
+          valueConfig.initValue = radToDeg(valueConfig.initValue);
           const animation = await this._getAnimation(valueConfig);
           this.animationConfigs.push(valueConfig);
           animationStyle[config.name] = animationStyle[config.name].filter(style => Object.keys(style)[0] !== valueKeys[0]);
@@ -340,11 +342,10 @@ class AnimatedView extends Component {
     }
 
     // 初始值
-    let initValue = config.initValue || animation.style;
+    let initValue = config.initValue;
     if (initValue === undefined && animation.style !== undefined) {
       initValue = animation.style;
     }
-
     if (initValue === undefined) {
       // 颜色
       if (config.name === 'color' || config.name.indexOf('Color') !== -1) {
