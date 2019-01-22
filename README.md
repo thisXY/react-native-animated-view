@@ -13,17 +13,19 @@ npm install react-native-animated-view --save
 
 ### 属性
 
-| parameter            | type                               | required | description                                                                                                                                                                                                                                                                                                                         | default                  
-| :------------------- | :----------------------------------| :------- | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| :------------------------
-| children             | ropTypes.node                      | no       | 子组件                                                                                                                                                                                                                                                                                                                               | null                     
-| animationElement     | func                               | no       | 动画元素                                                                                                                                                                                                                                                                                                                             | Animated.View            
-| style                | oneOfType([number, object, array]) | no       | 样式                                                                                                                                                                                                                                                                                                                                 |                          
-| isUseNativeDriver    | bool                               | no       | 是否启用原生动画驱动 (启用原生动画驱动几乎不会有UI卡顿);<br>目前RN仅支持其中样式['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius'];<br>若尝试启动非支持样式的原生动画驱动, start()将返回false示意无法启动;<br>由于RN机制该设置一旦设定将不可切换 (你可以创建一个新的AnimatedView切换该设置) | false                    
-| defaultAnimationType | oneOf(['sequence', 'parallel'])    | no       | 动画类型 <br>sequence: 顺序执行<br>parallel: 同时执行                                                                                                                                                                                                                                                                                  | parallel                 
-| defaultEasing        | func                               | no       | 默认动画函数                                                                                                                                                                                                                                                                                                                          | Easing.inOut(Easing.ease)
-| defaultDuration      | number                             | no       | 默认动画时间 (ms)                                                                                                                                                                                                                                                                                                                     | 500                      
-| defaultCallback      | func                               | no       | 默认结束回调 (<br>isFinish: 动画是否完成<br>)                                                                                                                                                                                                                                                                                          |                          
-| defaultFrameCallback | func                               | no       | 默认动画帧回调 (<br>info: 当前帧信息{<br>name: 样式名, <br>value: 当前样式值, <br>num: 当前动画值, <br>inputRange: 动画值区间, <br>outputRange: 样式值区间, <br>isFinish: 是否结束<br>})                                                                                                                                                      |                          
+| parameter                     | type                                       | required | description                                                                                                                                                                                                                                                                                                                         | default                  
+| :---------------------------- | :----------------------------------------- | :------- | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| :------------------------
+| children                      | ropTypes.node                              | no       | 子组件                                                                                                                                                                                                                                                                                                                               | null                     
+| animationElement              | func                                       | no       | 动画元素                                                                                                                                                                                                                                                                                                                             | Animated.View            
+| style                         | oneOfType([number, object, array])         | no       | 样式                                                                                                                                                                                                                                                                                                                                 |                          
+| isUseNativeDriver             | bool                                       | no       | 是否启用原生动画驱动 (启用原生动画驱动几乎不会有UI卡顿);<br>目前RN仅支持其中样式['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius'];<br>若尝试启动非支持样式的原生动画驱动, start()将返回false示意无法启动;<br>由于RN机制该设置一旦设定将不可切换 (你可以创建一个新的AnimatedView切换该设置) | false                    
+| defaultAnimationType          | oneOf(['sequence', 'parallel', 'stagger']) | no       | 动画类型 <br>sequence: 顺序执行<br>parallel: 同时执行<br>stagger: 间隔延时时间执行顺序并行                                                                                                                                                                                                                                                 | parallel                 
+| defaultParallelIsStopTogether | bool                                       | no       | 默认动画类型parallel是否联动(如果联动,任何一个动画被停止或中断，组内所有其它的动画也会被停止)                                                                                                                                                                                                                                                  | false
+| defaultStaggerDelayTime       | number                                     | no       | 默认动画类型stagger延迟时间                                                                                                                                                                                                                                                                                                             | 0
+| defaultEasing                 | func                                       | no       | 默认动画函数                                                                                                                                                                                                                                                                                                                          | Easing.inOut(Easing.ease)
+| defaultDuration               | number                                     | no       | 默认动画时间 (ms)                                                                                                                                                                                                                                                                                                                     | 500                      
+| defaultCallback               | func                                       | no       | 默认结束回调 (<br>isFinish: 动画是否完成<br>)                                                                                                                                                                                                                                                                                          |                          
+| defaultFrameCallback          | func                                       | no       | 默认动画帧回调 (<br>info: 当前帧信息{<br>name: 样式名, <br>value: 当前样式值, <br>num: 当前动画值, <br>inputRange: 动画值区间, <br>outputRange: 样式值区间, <br>isFinish: 是否结束<br>})                                                                                                                                                      |                          
 
 ### 方法
 启动动画:
@@ -42,24 +44,58 @@ npm install react-native-animated-view --save
    *   easing,
    *   // 动画时间 (缺省使用动画参数配置或默认)
    *   duration,
-   *   // 动画帧回调 (@param info 当前动画帧信息 {value: 当前样式值, num: 当前动画值, inputRange: 动画值区间, outputRange: 样式值区间, isFinish: 是否结束})
+   *   // 动画帧回调
+   *     (@param info 当前动画帧信息:
+   *     {
+   *       value: 当前样式值,
+   *       num: 当前动画值,
+   *       inputRange: 动画值区间,
+   *       outputRange: 样式值区间,
+   *       isFinish: 是否结束
+   *     })
    *   frameCallback,
    * }]
    *
    * 对象: { 样式名: 样式值 || [初始样式值, 样式值] }
    *
+   * -----------------------------------------------------
    *
-   * @param 动画参数配置(configs配置将覆盖此配置 缺省使用默认) {duration: 动画时间, easing: 动画函数, frameCallback: 动画帧回调, callback: 结束回调, animationType: 动画类型}
+   * @param 动画参数配置(configs配置将覆盖此配置 缺省使用默认):
+   * {
+   *   duration: 动画时间,
+   *   easing: 动画函数,
+   *   frameCallback: 动画帧回调,
+   *   callback: 结束回调,
+   *   animationType: 动画类型,
+   *   parallelIsStopTogether: 动画类型parallel是否联动,
+   *   staggerDelayTime: 动画类型stagger延迟时间
+   * }
    *
    * @return Promise (@param isFinish 动画是否完成)
    */
-  start = async (configs, { duration = this.props.defaultDuration, easing = this.props.defaultEasing, frameCallback = this.props.defaultFrameCallback, callback = this.props.defaultCallback, animationType = this.props.defaultAnimationType } = {}) => {}
+  start = async (
+    configs, 
+    { 
+      duration = this.props.defaultDuration, 
+      easing = this.props.defaultEasing, 
+      frameCallback = this.props.defaultFrameCallback, 
+      callback = this.props.defaultCallback, 
+      animationType = this.props.defaultAnimationType 
+    } = {}) => {}
 ```
 
 停止动画:
 ```js
   /**
-   * @return result 动画结果信息(false: 无动画): {name: 样式名, value: 当前样式值, num: 当前动画值, inputRange: 动画值区间, outputRange: 样式值区间, isFinish: 是否结束}
+   * @return result 动画结果信息(false: 无动画):
+   * {
+   *   name: 样式名,
+   *   value: 当前样式值,
+   *   num: 当前动画值,
+   *   inputRange: 动画值区间,
+   *   outputRange: 样式值区间,
+   *   isFinish: 是否结束
+   * }
    */
   stop = () => {}
 ```
@@ -215,12 +251,17 @@ export default Example;
 
 ```
 ### 源码
-
-> https://github.com/thisXY/react-native-animated-view
-
+```
+https://github.com/thisXY/react-native-animated-view
+```
 ### react native动画组件推荐
-* https://github.com/thisXY/react-native-easing 
-  > react native easing的一些别名封装和自定义封装,让你可以更好地使用easing
-* https://github.com/thisXY/react-native-touchable-view 
-  > 你可以依赖这个TouchableView的长按,滑动,X轴滑动,Y轴滑动,长按后滑动等手势响应得到回调和一系列参数(如相对父组件x、y坐标,相对页面x、y坐标,x轴位移、y轴位移)处理你的业务(如手势动画)
+```
+https://github.com/thisXY/react-native-easing 
 
+react native easing的一些别名封装和自定义封装,让你可以更好地使用easing
+```
+```
+https://github.com/thisXY/react-native-touchable-view 
+
+你可以依赖这个TouchableView的长按,滑动,X轴滑动,Y轴滑动,长按后滑动等手势响应得到回调和一系列参数(如相对父组件x、y坐标,相对页面x、y坐标,x轴位移、y轴位移)处理你的业务(如手势动画)
+```

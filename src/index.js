@@ -20,17 +20,29 @@ class AnimatedView extends Component {
      * 由于RN机制该设置一旦设定将不可切换 (你可以创建一个新的AnimatedView切换该设置)
      */
     isUseNativeDriver: PropTypes.bool,
-    // 默认动画类型 (sequence: 顺序执行, parallel: 同时执行)
-    defaultAnimationType: PropTypes.oneOf(['sequence', 'parallel']),
+    // 默认动画类型 (sequence: 顺序执行, parallel: 同时执行, stagger: 间隔延时时间执行顺序并行)
+    defaultAnimationType: PropTypes.oneOf(['sequence', 'parallel', 'stagger']),
+    // 默认动画类型parallel是否联动(如果联动,任何一个动画被停止或中断，组内所有其它的动画也会被停止)
+    defaultParallelIsStopTogether: PropTypes.bool,
+    // 默认动画类型stagger延迟时间
+    defaultStaggerDelayTime: PropTypes.number,
     // 默认动画函数
     defaultEasing: PropTypes.func,
     // 默认动画时间 (ms)
     defaultDuration: PropTypes.number,
     /**
      * 默认动画帧回调
-     * @param info 当前动画帧信息 {name: 样式名, value: 当前样式值, num: 当前动画值, inputRange: 动画值区间, outputRange: 样式值区间, isFinish: 是否结束}
+     * @param info 当前动画帧信息:
+     * {
+     *   name: 样式名,
+     *   value: 当前样式值,
+     *   num: 当前动画值,
+     *   inputRange: 动画值区间,
+     *   outputRange: 样式值区间,
+     *   isFinish: 是否结束
+     * }
      */
-    defaultFrameCallback: PropTypes.oneOfType([PropTypes.func, PropTypes.oneOf([null])]),
+    defaultFrameCallback: PropTypes.func,
     /**
      * 默认结束回调
      * @param isFinish 动画是否完成
@@ -44,6 +56,8 @@ class AnimatedView extends Component {
     style: null,
     isUseNativeDriver: false,
     defaultAnimationType: 'parallel',
+    defaultParallelIsStopTogether: false,
+    defaultStaggerDelayTime: 0,
     defaultEasing: Easing.inOut(Easing.ease),
     defaultDuration: 500,
     defaultFrameCallback: null,
@@ -89,14 +103,32 @@ class AnimatedView extends Component {
    *   easing,
    *   // 动画时间 (缺省使用动画参数配置或默认)
    *   duration,
-   *   // 动画帧回调 (@param info 当前动画帧信息 {value: 当前样式值, num: 当前动画值, inputRange: 动画值区间, outputRange: 样式值区间, isFinish: 是否结束})
+   *   // 动画帧回调
+   *     (@param info 当前动画帧信息:
+   *     {
+   *       value: 当前样式值,
+   *       num: 当前动画值,
+   *       inputRange: 动画值区间,
+   *       outputRange: 样式值区间,
+   *       isFinish: 是否结束
+*        })
    *   frameCallback,
    * }]
    *
    * 对象: { 样式名: 样式值 || [初始样式值, 样式值] }
    *
+   * -----------------------------------------------------
    *
-   * @param 动画参数配置(configs配置将覆盖此配置 缺省使用默认) {duration: 动画时间, easing: 动画函数, frameCallback: 动画帧回调, callback: 结束回调, animationType: 动画类型}
+   * @param 动画参数配置(configs配置将覆盖此配置 缺省使用默认):
+   * {
+   *   duration: 动画时间,
+   *   easing: 动画函数,
+   *   frameCallback: 动画帧回调,
+   *   callback: 结束回调,
+   *   animationType: 动画类型,
+   *   parallelIsStopTogether: 动画类型parallel是否联动,
+   *   staggerDelayTime: 动画类型stagger延迟时间
+   * }
    *
    * @return Promise (@param isFinish 动画是否完成)
    */
@@ -108,6 +140,8 @@ class AnimatedView extends Component {
       frameCallback = this.props.defaultFrameCallback,
       callback = this.props.defaultCallback,
       animationType = this.props.defaultAnimationType,
+      parallelIsStopTogether = this.props.defaultParallelIsStopTogether,
+      staggerDelayTime = this.props.defaultStaggerDelayTime,
     } = {}) => {
     const animations = [];
     const animationStyle = { ...this.state.animationStyle };
@@ -240,7 +274,14 @@ class AnimatedView extends Component {
             break;
           // 同时执行
           case 'parallel':
-            Animated.parallel(animations).start(result => {
+            Animated.parallel(animations, { stopTogether: parallelIsStopTogether }).start(result => {
+              callback(result.finished);
+              resolve(result.finished);
+            });
+            break;
+          // 间隔延时时间执行顺序并行
+          case 'stagger':
+            Animated.stagger(staggerDelayTime, animations).start(result => {
               callback(result.finished);
               resolve(result.finished);
             });
@@ -252,7 +293,15 @@ class AnimatedView extends Component {
 
   /**
    * 停止动画
-   * @return result 动画结果信息(false: 无动画): {name: 样式名, value: 当前样式值, num: 当前动画值, inputRange: 动画值区间, outputRange: 样式值区间, isFinish: 是否结束}
+   * @return result 动画结果信息(false: 无动画):
+   * {
+   *   name: 样式名,
+   *   value: 当前样式值,
+   *   num: 当前动画值,
+   *   inputRange: 动画值区间,
+   *   outputRange: 样式值区间,
+   *   isFinish: 是否结束
+   * }
    */
   stop = () => {
     if (this.animationConfigs.length > 0) {
@@ -476,6 +525,8 @@ class AnimatedView extends Component {
     const AnimationElement = this.props.animationElement;
     const style = StyleSheet.flatten(this.props.style) || {};
     const animationStyle = {};
+
+    // 样式比较(响应props.style的更新值)
     Object.keys(this.state.animationStyle).forEach(key1 => {
       switch (Object.prototype.toString.call(this.state.animationStyle[key1])) {
         case '[object Object]':
