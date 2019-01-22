@@ -251,17 +251,11 @@ export default Example;
 
 ```
 ### 源码
-```
-https://github.com/thisXY/react-native-animated-view
-```
+
+> https://github.com/thisXY/react-native-animated-view
+
 ### react native动画组件推荐
-```
-https://github.com/thisXY/react-native-easing 
-
-react native easing的一些别名封装和自定义封装,让你可以更好地使用easing
-```
-```
-https://github.com/thisXY/react-native-touchable-view 
-
-你可以依赖这个TouchableView的长按,滑动,X轴滑动,Y轴滑动,长按后滑动等手势响应得到回调和一系列参数(如相对父组件x、y坐标,相对页面x、y坐标,x轴位移、y轴位移)处理你的业务(如手势动画)
-```
+* https://github.com/thisXY/react-native-easing 
+  > react native easing的一些别名封装和自定义封装,让你可以更好地使用easing
+* https://github.com/thisXY/react-native-touchable-view 
+  > 你可以依赖这个TouchableView的长按,滑动,X轴滑动,Y轴滑动,长按后滑动等手势响应得到回调和一系列参数(如相对父组件x、y坐标,相对页面x、y坐标,x轴位移、y轴位移)处理你的业务(如手势动画)
