@@ -199,8 +199,9 @@ class AnimatedView extends Component {
             name: valueKeys[0],
             configName: `${config.name}_${valueKeys[0]}`,
             value: value[valueKeys[0]],
-            initValue: Array.isArray(config.initValue) && (config.initValue.find(initValue => Object.keys(initValue)[0] === valueKeys[0]) || {})[valueKeys[0]] || undefined,
+            initValue: Array.isArray(config.initValue) && (config.initValue.find(initValue => Object.keys(initValue)[0] === valueKeys[0]) || {})[valueKeys[0]],
           };
+          if (valueConfig.initValue === false) valueConfig.initValue = undefined;
           valueConfig.value = radToDeg(valueConfig.value);
           valueConfig.initValue = radToDeg(valueConfig.initValue);
           const animation = await this._getAnimation(valueConfig);
