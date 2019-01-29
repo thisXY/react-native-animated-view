@@ -16,8 +16,7 @@ class AnimatedView extends Component {
     /**
      * 是否启用原生动画驱动 (启用原生动画驱动几乎不会有UI卡顿)
      * 目前RN仅支持其中样式['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius']
-     * 若尝试启动非支持样式的原生动画驱动, start()将返回false示意无法启动
-     * 由于RN机制该设置一旦设定将不可切换 (你可以创建一个新的AnimatedView切换该设置)
+     * 若尝试启动非支持样式的原生动画驱动, 将自动设置为不启用原生动画驱动
      */
     isUseNativeDriver: PropTypes.bool,
     // 默认动画类型 (sequence: 顺序执行, parallel: 同时执行, stagger: 间隔延时时间执行顺序并行)
@@ -54,7 +53,7 @@ class AnimatedView extends Component {
     children: null,
     animationElement: Animated.View,
     style: null,
-    isUseNativeDriver: false,
+    isUseNativeDriver: true,
     defaultAnimationType: 'parallel',
     defaultParallelIsStopTogether: false,
     defaultStaggerDelayTime: 0,
@@ -77,7 +76,7 @@ class AnimatedView extends Component {
     // 历史动画
     this.animations = {};
     // 是否启用原生动画驱动
-    this.isUseNativeDriver = props.isUseNativeDriver;
+    this.isUseNativeDriver = false;
   }
 
   componentWillUnmount() {
@@ -179,9 +178,17 @@ class AnimatedView extends Component {
     }
 
     // 原生动画驱动
-    if (this.isUseNativeDriver && configList.filter(config => ['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius'].includes(config.name)).length !== configList.length) {
-      // 无法启动
-      return false;
+    if (this.props.isUseNativeDriver) {
+      if (configList.filter(config => ['transform', 'opacity', 'shadowOffset', 'shadowRadius', 'shadowOpacity', 'textShadowOffset', 'textShadowRadius'].includes(config.name)).length !== configList.length) {
+        // 无法启动
+        this.isUseNativeDriver = false;
+      }
+      else {
+        this.isUseNativeDriver = true;
+      }
+    }
+    else {
+      this.isUseNativeDriver = false;
     }
 
     // 停止动画
@@ -199,9 +206,10 @@ class AnimatedView extends Component {
             name: valueKeys[0],
             configName: `${config.name}_${valueKeys[0]}`,
             value: value[valueKeys[0]],
-            initValue: Array.isArray(config.initValue) && (config.initValue.find(initValue => Object.keys(initValue)[0] === valueKeys[0]) || {})[valueKeys[0]],
           };
-          if (valueConfig.initValue === false) valueConfig.initValue = undefined;
+          if (Array.isArray(config.initValue)) {
+            valueConfig.initValue = (config.initValue.find(initValue => Object.keys(initValue)[0] === valueKeys[0]) || {})[valueKeys[0]];
+          }
           valueConfig.value = radToDeg(valueConfig.value);
           valueConfig.initValue = radToDeg(valueConfig.initValue);
           const animation = await this._getAnimation(valueConfig);
@@ -229,8 +237,10 @@ class AnimatedView extends Component {
             name: valueKey,
             configName: `${config.name}_${valueKey}`,
             value: config.value[valueKey],
-            initValue: config.initValue && config.initValue[valueKey],
           };
+          if (Object.prototype.toString.call(config.initValue) === '[object Object]') {
+            valueConfig.initValue = config.initValue[valueKey];
+          }
           const animation = await this._getAnimation(valueConfig);
           this.animationConfigs.push(valueConfig);
           animationStyle[config.name][valueKey] = animation.animation.interpolate({
@@ -526,6 +536,7 @@ class AnimatedView extends Component {
     const AnimationElement = this.props.animationElement;
     const style = StyleSheet.flatten(this.props.style) || {};
     const animationStyle = {};
+    const stateStyle = {};
 
     // 样式比较(响应props.style的更新值)
     Object.keys(this.state.animationStyle).forEach(key1 => {
@@ -545,7 +556,12 @@ class AnimatedView extends Component {
             }
 
             if (isSetStyle) {
-              animationStyle[key1] = this.state.animationStyle[key1];
+              if (this.animationConfigs.filter(config => config.configName === key1).length === 1) {
+                animationStyle[key1] = this.state.animationStyle[key1];
+              }
+              else {
+                stateStyle[key1] = this.animations[key1].outputRange[1];
+              }
             }
             else {
               this._deleteAnimation(key1);
@@ -566,8 +582,14 @@ class AnimatedView extends Component {
               }
 
               if (isSetStyle) {
-                if (!animationStyle[key1]) animationStyle[key1] = {};
-                animationStyle[key1][key2] = this.state.animationStyle[key1][key2];
+                if (this.animationConfigs.filter(config => config.configName === `${key1}_${key2}`).length === 1) {
+                  if (!animationStyle[key1]) animationStyle[key1] = {};
+                  animationStyle[key1][key2] = this.state.animationStyle[key1][key2];
+                }
+                else {
+                  if (!stateStyle[key1]) stateStyle[key1] = {};
+                  stateStyle[key1][key2] = this.animations[`${key1}_${key2}`].outputRange[1];
+                }
               }
               else {
                 this._deleteAnimation(`${key1}_${key2}`);
@@ -592,8 +614,14 @@ class AnimatedView extends Component {
             }
 
             if (isSetStyle) {
-              if (!animationStyle[key1]) animationStyle[key1] = [];
-              animationStyle[key1].push({ [key2]: this.state.animationStyle[key1][key][key2] });
+              if (this.animationConfigs.filter(config => config.configName === `${key1}_${key2}`).length === 1) {
+                if (!animationStyle[key1]) animationStyle[key1] = [];
+                animationStyle[key1].push({ [key2]: this.state.animationStyle[key1][key][key2] });
+              }
+              else {
+                if (!stateStyle[key1]) stateStyle[key1] = [];
+                stateStyle[key1].push({ [key2]: this.animations[`${key1}_${key2}`].outputRange[1] });
+              }
             }
             else {
               this._deleteAnimation(`${key1}_${key2}`);
@@ -607,6 +635,7 @@ class AnimatedView extends Component {
       <AnimationElement
         style={[
           this.props.style,
+          stateStyle,
           animationStyle,
         ]}
         ref={ref => this.animationRef = ref}
