@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Animated, Easing, StyleSheet, UIManager, findNodeHandle } from 'react-native';
-import { gradualChange, radToDeg } from './utils';
+import { merge, gradualChange, radToDeg } from './utils';
 
 /**
  * 动画View
@@ -71,6 +71,8 @@ class AnimatedView extends Component {
       animationStyle: {},
     };
     this.animationRef = null;
+    // 数组样式
+    this.arrayStyle = ['transform'];
     // 当前动画配置
     this.animationConfigs = [];
     // 历史动画
@@ -161,7 +163,7 @@ class AnimatedView extends Component {
           easing,
           frameCallback,
         };
-        if (Array.isArray(configs[name]) && (Object.prototype.toString.call(configs[name][0]) !== '[object Object]' || name !== 'transform')) {
+        if (Array.isArray(configs[name]) && (Object.prototype.toString.call(configs[name][0]) !== '[object Object]' || !this.arrayStyle.includes(name))) {
           if (configs[name].length === 2) {
             config.initValue = configs[name][0];
             config.value = configs[name][1];
@@ -304,6 +306,20 @@ class AnimatedView extends Component {
 
   /**
    * 停止动画
+   *
+   * @param status 动画停止状态(默认动画停止在当前) (对象 || 布尔)
+   *
+   *   布尔: (true: 动画停止在终点 false: 动画停止在起点)
+   *
+   *   对象: {
+   *     // 停止在起点样式集合(多层样式如 transform: [{ translateY }]用transform_translateY表示) 优先级高于end
+   *     start: [],
+   *     // 停止在终点样式集合(多层样式如 transform: [{ translateY }]用transform_translateY表示)
+   *     end: []
+   *   }
+   *
+   * -----------------------------------------------------
+   *
    * @return result 动画结果信息(false: 无动画):
    * {
    *   name: 样式名,
@@ -314,16 +330,42 @@ class AnimatedView extends Component {
    *   isFinish: 是否结束
    * }
    */
-  stop = () => {
+  stop = status => {
     if (this.animationConfigs.length > 0) {
+      let style = null;
+      if (status !== undefined) {
+        style = { ...this.state.animationStyle };
+      }
       const result = [];
       this.animationConfigs.forEach(animationConfig => {
         this.animations[animationConfig.configName].animation.stopAnimation(num => {
+          if (style) {
+            if (status === true || status.end && status.end.includes(animationConfig.configName)) {
+              num = 1;
+            }
+            else if (status === false || status.start && status.start.includes(animationConfig.configName)) {
+              num = 1 / 10 ** 10;
+            }
+          }
+
           const inputRange = [...this.animations[animationConfig.configName].inputRange];
           const outputRange = [...this.animations[animationConfig.configName].outputRange];
           const value = this._getValue(outputRange[0], outputRange[1], num);
           // 更新历史动画
           this._updateAnimation(animationConfig.configName, this.animations[animationConfig.configName].style, value);
+          // 更新样式
+          if (style) {
+            const configName = animationConfig.configName.split('_');
+            if (configName.length === 1) {
+              style[animationConfig.configName] = value;
+            }
+            else if (this.arrayStyle.includes(configName[0])) {
+              (style[configName[0]].find(configNameStyle => Object.keys(configNameStyle)[0] === configName[1]))[configName[1]] = value;
+            }
+            else {
+              style[configName[0]][configName[1]] = value;
+            }
+          }
 
           result.push({
             name: animationConfig.configName,
@@ -335,6 +377,11 @@ class AnimatedView extends Component {
           });
         });
       });
+
+      if (style) {
+        this.setState({ animationStyle: style });
+      }
+
       return result;
     }
     return false;
@@ -540,9 +587,12 @@ class AnimatedView extends Component {
 
     // 样式比较(响应props.style的更新值)
     Object.keys(this.state.animationStyle).forEach(key1 => {
-      switch (Object.prototype.toString.call(this.state.animationStyle[key1])) {
+      const styleType = Object.prototype.toString.call(this.state.animationStyle[key1]);
+      switch (styleType) {
+        case '[object Number]':
+        case '[object String]':
         case '[object Object]':
-          if (this.state.animationStyle[key1]._interpolation) {
+          if (['[object Number]', '[object String]'].includes(styleType) || this.state.animationStyle[key1]._interpolation) {
             let isSetStyle = true;
             if (this.animations[key1]) {
               const newStyle = style[key1];
@@ -633,11 +683,11 @@ class AnimatedView extends Component {
 
     return (
       <AnimationElement
-        style={[
+        style={merge([
           this.props.style,
           stateStyle,
           animationStyle,
-        ]}
+        ])}
         ref={ref => this.animationRef = ref}
       >
         {this.props.children}

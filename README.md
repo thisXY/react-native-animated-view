@@ -40,9 +40,9 @@ npm install react-native-animated-view --save
    *   value,
    *   // 初始样式值 (缺省使用当前样式值)
    *   initValue,
-   *   // 动画函数 (缺省使用动画参数配置或默认)
+   *   // 动画函数 (缺省使用动画参数配置 || 默认)
    *   easing,
-   *   // 动画时间 (缺省使用动画参数配置或默认)
+   *   // 动画时间 (缺省使用动画参数配置 || 默认)
    *   duration,
    *   // 动画帧回调
    *     (@param info 当前动画帧信息:
@@ -73,20 +73,27 @@ npm install react-native-animated-view --save
    *
    * @return Promise (@param isFinish 动画是否完成)
    */
-  start = async (
-    configs, 
-    { 
-      duration = this.props.defaultDuration, 
-      easing = this.props.defaultEasing, 
-      frameCallback = this.props.defaultFrameCallback, 
-      callback = this.props.defaultCallback, 
-      animationType = this.props.defaultAnimationType 
-    } = {}) => {}
+  start(configs, setting)
 ```
 
 停止动画:
 ```js
   /**
+   * 停止动画
+   *
+   * @param status 动画停止状态(默认动画停止在当前) (对象 || 布尔)
+   *
+   *   布尔: (true: 动画停止在终点 false: 动画停止在起点)
+   *
+   *   对象: {
+   *     // 停止在起点样式集合(多层样式如 transform: [{ translateY }]用transform_translateY表示) 优先级高于end
+   *     start: [],
+   *     // 停止在终点样式集合(多层样式如 transform: [{ translateY }]用transform_translateY表示)
+   *     end: []
+   *   }
+   *
+   * -----------------------------------------------------
+   *
    * @return result 动画结果信息(false: 无动画):
    * {
    *   name: 样式名,
@@ -97,7 +104,7 @@ npm install react-native-animated-view --save
    *   isFinish: 是否结束
    * }
    */
-  stop = () => {}
+  stop(status)
 ```
 ### 示例
 ![screenshot](https://raw.github.com/thisXY/react-native-animated-view/master/example/demo.gif)

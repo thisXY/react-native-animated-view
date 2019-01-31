@@ -1,13 +1,61 @@
+import { StyleSheet } from 'react-native';
 import Color from './Easycolor';
 
 /**
+ * 合并
+ * @param styles 原样式: (多重)数组样式对象、 动画插值样式
+ * @param isDepth 是否深度合并
+ */
+const merge = (styles, isDepth = true) => {
+  if (isDepth && Array.isArray(styles)) {
+    let result = {};
+    const objectStyle = {};
+    const merge = styles => {
+      styles.forEach(style => {
+        if (typeof style === 'number') {
+          style = StyleSheet.flatten(style);
+        }
+        if (!style) {
+          return;
+        }
+        if (Array.isArray(style)) {
+          merge(style);
+        }
+        else {
+          Object.keys(style).forEach(key => {
+            if (Array.isArray(style[key])) {
+              if (!objectStyle[key]) {
+                objectStyle[key] = [];
+              }
+              const keys = style[key].map(style => Object.keys(style)[0]);
+              objectStyle[key] = objectStyle[key].filter(style => !keys.includes(Object.keys(style)[0]));
+              objectStyle[key] = [...objectStyle[key], ...style[key]];
+            }
+            else if (typeof (style[key]) === 'object' && !style[key]._interpolation) {
+              if (!objectStyle[key]) {
+                objectStyle[key] = {};
+              }
+              objectStyle[key] = { ...objectStyle[key], ...style[key] };
+            }
+          });
+          result = { ...result, ...style };
+        }
+      });
+    };
+    merge(styles);
+    return { ...result, ...objectStyle };
+  }
+  return StyleSheet.flatten(styles) || {};
+};
+
+/**
  * 颜色渐变
- * @param color1 开始颜色
- * @param color2 结束颜色
+ * @param startColor 开始颜色
+ * @param endColor 结束颜色
  * @param scale 变化程度比 (0 - 1)
  * @return 结果颜色 (rgba)
  */
-const gradualChange = (color1, color2, scale = 1) => {
+const gradualChange = (startColor, endColor, scale = 1) => {
   let newColor = 'rgba(';
   const getColor = color => {
     color = Color(color).toRgbString();
@@ -17,11 +65,11 @@ const gradualChange = (color1, color2, scale = 1) => {
     }
     return color;
   };
-  color1 = getColor(color1);
-  color2 = getColor(color2);
-  color1.forEach((v, k) => {
+  startColor = getColor(startColor);
+  endColor = getColor(endColor);
+  startColor.forEach((v, k) => {
     const v1 = parseFloat(v);
-    const v2 = parseFloat(color2[k]);
+    const v2 = parseFloat(endColor[k]);
     const v3 = (v1 + (v2 - v1) * scale).toFixed(k === 3 ? 2 : 0);
     newColor += `${v3}${k === 3 ? ')' : ','}`;
   });
@@ -43,6 +91,7 @@ const radToDeg = rad => {
 };
 
 export {
+  merge,
   gradualChange,
   radToDeg,
 };
