@@ -159,7 +159,7 @@ class Example extends Component {
       },
       {
         name: 'transform',
-        value: [{ rotate: '-30deg', scale: 0.6 }],
+        value: [{ rotate: '-30deg' }, { scale: 1 }],
         duration: 3000,
         frameCallback: info => {
           console.log('transform_frameCallback:', info);
